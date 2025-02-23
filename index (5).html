@@ -1,0 +1,422 @@
+<html><head><base href="." /><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GAS Vocabulary Concentration</title>
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.game-container {
+    max-width: 800px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.card {
+    background: #2196f3;
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    min-height: 80px;
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: transform 0.3s ease;
+    transform-style: preserve-3d;
+    font-size: 16px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.card.flipped {
+    background: #4caf50;
+}
+
+.card.matched {
+    background: #81c784;
+    cursor: default;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.button {
+    background: #2196f3;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.button:hover {
+    background: #1976d2;
+}
+
+@keyframes celebrate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.celebration {
+    animation: celebrate 0.5s ease;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.timer {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #2196f3;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    background-color: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.modal img {
+    max-width: 200px;
+    margin: 0 auto;
+    display: block;
+}
+
+.close-modal {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Vocabulary Concentration (Professions)</h1>
+        <p class="subtitle">Complete this concentration game successfully and earn a Pokemon!</p>
+        <div class="stats">
+            <div>Time: <span id="timer" class="timer">00:00</span></div>
+            <div>Moves: <span id="moves">0</span></div>
+            <div>Matches: <span id="matches">0</span>/8</div>
+            <button class="button" id="reset">New Game</button>
+        </div>
+        <div class="card-grid" id="grid"></div>
+        <div class="footer">Author: Aaron Shi. Released in 2025.</div>
+    </div>
+
+    <div id="congratsModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Congratulations!</h2>
+            <p id="congratsMessage"></p>
+            <img id="pokemonImage" alt="Random Pokemon celebration image" width="200" height="200">
+            <button class="button" onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+<script>
+const allPhrases = [
+    ["doctor", "醫生/博士"],
+    ["nurse", "護士/護理師"],
+    ["surgeon", "外科醫生"],
+    ["physician", "內科醫生"],
+    ["dentist", "牙醫"],
+    ["pharmacist", "藥師"],
+    ["vet", "獸醫"],
+    ["paramedic", "高級救護員"],
+    ["engineer", "工程師"],
+    ["civil engineer", "土木工程師"],
+    ["software engineer", "軟體工程師"],
+    ["architect", "建築師"],
+    ["designer", "設計師"],
+    ["interior designer", "室內設計師"],
+    ["graphic designer", "平面設計師"],
+    ["artist", "藝術家"],
+    ["photographer", "攝影師"],
+    ["musician", "音樂家"],
+    ["composer", "作曲人"],
+    ["singer", "歌手"],
+    ["actor", "演員"],
+    ["director", "導演"],
+    ["producer", "製作人"],
+    ["writer", "作家"],
+    ["journalist", "記者"],
+    ["editor", "編輯"],
+    ["translator", "筆譯者"],
+    ["interpreter", "口譯員"],
+    ["teacher", "老師"],
+    ["professor", "教授"],
+    ["principal", "中學校長"],
+    ["researcher", "研究員"],
+    ["scientist", "科學家"],
+    ["chemist", "化學家"],
+    ["physicist", "物理學家"],
+    ["biologist", "生物學家"],
+    ["economist", "經濟學家"],
+    ["accountant", "會計師"],
+    ["financial analyst", "財務分析師"],
+    ["banker", "銀行家"],
+    ["real estate agent", "房地產經紀人"],
+    ["lawyer", "律師"],
+    ["judge", "法官"],
+    ["police officer", "警察"],
+    ["detective", "偵探"],
+    ["firefighter", "消防員"],
+    ["military officer", "軍官"],
+    ["soldier", "士兵"],
+    ["pilot", "飛行員"],
+    ["flight attendant", "空服員"],
+    ["air traffic controller", "空中交通管制員"],
+    ["chef", "主廚"],
+    ["baker", "烘焙師"],
+    ["butcher", "屠夫"],
+    ["farmer", "農夫"],
+    ["fisherman", "漁夫"],
+    ["construction worker", "建築工人"],
+    ["electrician", "電工"],
+    ["plumber", "水管工"],
+    ["mechanic", "技工"],
+    ["carpenter", "木工"],
+    ["blacksmith", "鐵匠"],
+    ["driver", "司機"],
+    ["truck driver", "卡車司機"],
+    ["taxi driver", "計程車司機"],
+    ["bus driver", "公車司機"],
+    ["delivery person", "送貨員"],
+    ["mail carrier", "郵差"],
+    ["cashier", "收銀員"],
+    ["salesperson", "業務員"],
+    ["receptionist", "接待人員"],
+    ["hotel manager", "飯店經理"],
+    ["tour guide", "導遊"],
+    ["entrepreneur", "創/企業家"],
+    ["CEO", "執行長"],
+    ["COO", "營運長"],
+    ["CFO", "財務長"],
+    ["HR manager", "人資經理"],
+    ["social worker", "社工師"],
+    ["counselor", "輔導老師"],
+    ["psychologist", "心理學家"],
+    ["therapist", "治療師"],
+    ["philanthropist", "慈善家"],
+    ["politician", "政治人物"],
+    ["diplomat", "外交官"],
+    ["ambassador", "大使"],
+    ["government official", "政府官員"],
+    ["mayor", "市長"],
+    ["senator", "參議員"],
+    ["legislator", "立法委員"],
+    ["historian", "歷史學家"],
+    ["anthropologist", "人類學家"],
+    ["archaeologist", "考古學家"]
+];
+
+let phrases = [];
+let flippedCards = [];
+let matchedPairs = 0;
+let moves = 0;
+let cards = [];
+let timeStarted = false;
+let timerInterval;
+let seconds = 0;
+
+function selectRandomPhrases() {
+    const shuffledPhrases = [...allPhrases].sort(() => Math.random() - 0.5);
+    return shuffledPhrases.slice(0, 8);
+}
+
+function updateTimer() {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    document.getElementById('timer').textContent = 
+        `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    seconds++;
+}
+
+function startTimer() {
+    if (!timeStarted) {
+        timeStarted = true;
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+    timeStarted = false;
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function createCard(content, index) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.textContent = '?';
+    card.dataset.index = index;
+    card.dataset.content = content;
+    card.addEventListener('click', () => {
+        startTimer();
+        flipCard(card);
+    });
+    return card;
+}
+
+function flipCard(card) {
+    if (flippedCards.length === 2 || card.classList.contains('matched') || 
+        flippedCards.includes(card)) return;
+
+    card.textContent = card.dataset.content;
+    card.classList.add('flipped');
+    flippedCards.push(card);
+
+    if (flippedCards.length === 2) {
+        moves++;
+        document.getElementById('moves').textContent = moves;
+        checkMatch();
+    }
+}
+
+function checkMatch() {
+    const [card1, card2] = flippedCards;
+    const pair1 = phrases.find(pair => pair.includes(card1.dataset.content));
+    const isMatch = pair1 && pair1.includes(card2.dataset.content);
+
+    setTimeout(() => {
+        if (isMatch) {
+            card1.classList.add('matched');
+            card2.classList.add('matched');
+            matchedPairs++;
+            document.getElementById('matches').textContent = matchedPairs;
+            if (matchedPairs === 8) {
+                stopTimer();
+                celebrate();
+            }
+        } else {
+            card1.textContent = '?';
+            card2.textContent = '?';
+            card1.classList.remove('flipped');
+            card2.classList.remove('flipped');
+        }
+        flippedCards = [];
+    }, 1000);
+}
+
+async function celebrate() {
+    const container = document.querySelector('.game-container');
+    container.classList.add('celebration');
+    
+    const pokemonId = Math.floor(Math.random() * 898) + 1;
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`);
+    const data = await response.json();
+    
+    const currentDate = new Date().toLocaleDateString();
+    const finalTime = document.getElementById('timer').textContent;
+    const congratsMessage = `You spent ${finalTime} and took ${moves} moves to finish this vocabulary concentration on ${currentDate}. You've won ${data.name.charAt(0).toUpperCase() + data.name.slice(1)}!`;
+    
+    document.getElementById('congratsMessage').textContent = congratsMessage;
+    document.getElementById('pokemonImage').src = data.sprites.front_default;
+    document.getElementById('congratsModal').style.display = 'block';
+}
+
+function resetGame() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    flippedCards = [];
+    matchedPairs = 0;
+    moves = 0;
+    seconds = 0;
+    document.getElementById('moves').textContent = moves;
+    document.getElementById('matches').textContent = matchedPairs;
+    document.getElementById('timer').textContent = '00:00';
+    document.getElementById('congratsModal').style.display = 'none';
+    stopTimer();
+    
+    phrases = selectRandomPhrases();
+    cards = [];
+    phrases.forEach(pair => {
+        cards.push(pair[0], pair[1]);
+    });
+    cards = shuffle(cards);
+    
+    cards.forEach((content, index) => {
+        const card = createCard(content, index);
+        grid.appendChild(card);
+    });
+
+    const container = document.querySelector('.game-container');
+    container.classList.remove('celebration');
+}
+
+document.getElementById('reset').addEventListener('click', resetGame);
+document.querySelector('.close-modal').addEventListener('click', () => {
+    document.getElementById('congratsModal').style.display = 'none';
+});
+
+// Initialize the game
+resetGame();
+</script>
+</body></html>
